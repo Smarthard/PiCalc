@@ -29,17 +29,17 @@ public class PiCalc {
 
     public static void main(String[] args) {
         PiCalc piCalc = new PiCalc();
-        MultyThreadPiCalc mtPiCalc = new MultyThreadPiCalc();
+        MultiThreadPiCalc mtPiCalc = new MultiThreadPiCalc();
 
         Runnable picalcer = new Runnable() {
             public void run() {
 
                 synchronized (this) {
-                    while (mtPiCalc.k < MultyThreadPiCalc.MAX_K) {
+                    while (mtPiCalc.k < MultiThreadPiCalc.MAX_K) {
 //                    if (sumPi(k, SCALE).compareTo(accuracy) <= 0) {
 //                        k = Integer.MAX_VALUE;
 //                    }
-                        mtPiCalc.pi = mtPiCalc.pi.add(MultyThreadPiCalc.sumPi(mtPiCalc.k, SCALE));
+                        mtPiCalc.pi = mtPiCalc.pi.add(MultiThreadPiCalc.sumPi(mtPiCalc.k, SCALE));
                         mtPiCalc.k++;
                     }
                 }
@@ -66,7 +66,7 @@ public class PiCalc {
 
             piCalc.threadsList.forEach(Thread::start);
 
-            while (mtPiCalc.k < MultyThreadPiCalc.MAX_K - 1) {
+            while (mtPiCalc.k < MultiThreadPiCalc.MAX_K - 1) {
                 Thread.sleep(0, 1);
             }
         } catch (NumberFormatException | InterruptedException e) {

@@ -2,7 +2,7 @@ package net.smarthard;
 
 import java.math.BigDecimal;
 
-class MultyThreadPiCalc {
+class MultiThreadPiCalc {
 
     static Integer MAX_K = 1000;
 
