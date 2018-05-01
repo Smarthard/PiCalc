@@ -1,8 +1,6 @@
 package net.smarthard;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -27,6 +25,11 @@ public class PiCalc {
         if (!isNoWarnings) {
             System.out.println("WARNING: " + warningMsg);
         }
+    }
+
+    private static void printErrorAndExit(Exception e) {
+        System.err.println(e.getMessage());
+        System.exit(1);
     }
 
     /**
@@ -68,22 +71,23 @@ public class PiCalc {
                     .build()
                     .parse(args);
         } catch (ParameterException e) {
-            System.err.println(e.getMessage());
-            System.exit(1);
+            printErrorAndExit(e);
         }
 
         ExecutorService executorService = Executors.newFixedThreadPool(THREADS);
         Callable<BigDecimal> picalcer = () -> sumPi(k.getAndIncrement(), SCALE);
 
         // accuracy calculation
-        BigDecimal accuracy = new BigDecimal(1).setScale(SCALE, BigDecimal.ROUND_HALF_UP);
+        BigDecimal accuracy = BigDecimal.ONE.setScale(SCALE, BigDecimal.ROUND_HALF_UP);
         for (int i = 0; i <= SCALE; i++) {
-            accuracy = accuracy.divide(new BigDecimal(10), BigDecimal.ROUND_UP);
+            accuracy = accuracy.divide(BigDecimal.TEN, i < SCALE ? BigDecimal.ROUND_UNNECESSARY
+                                                                    : BigDecimal.ROUND_HALF_UP);
         }
 
         try {
-            if (Runtime.getRuntime().availableProcessors() < THREADS) {
-                printWarning("Your computer have only " + Runtime.getRuntime().availableProcessors() + " cores");
+            int coresCount = Runtime.getRuntime().availableProcessors();
+            if (coresCount < THREADS) {
+                printWarning("Your computer have only " + coresCount + " cores");
             }
             if (SCALE < 0) {
                 printWarning("Scale can not be negative");
@@ -100,8 +104,7 @@ public class PiCalc {
 
             executorService.shutdown();
         } catch (NumberFormatException | InterruptedException | ExecutionException e) {
-            System.err.println(e.getMessage());
-            System.exit(1);
+            printErrorAndExit(e);
         }
 
         System.out.printf("%." + SCALE + "f", pi);
