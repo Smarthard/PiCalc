@@ -3,12 +3,12 @@ package net.smarthard;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.beust.jcommander.*;
 
 public class PiCalc {
-
-    private List<Thread> threadsList = new ArrayList<>();
 
     @Parameter(names = {"-w", "--nowarnings"}, description = "Disables warning messages")
     private static boolean isNoWarnings = false;
@@ -19,7 +19,9 @@ public class PiCalc {
     @Parameter(names = {"-t", "--threads"}, description = "Number of threads to calculate")
     private static Integer THREADS = 1;
 
-    private static BigDecimal accuracy = new BigDecimal(1).setScale(SCALE, BigDecimal.ROUND_HALF_UP);
+    private static volatile AtomicInteger k = new AtomicInteger(0);
+
+    private static volatile BigDecimal pi = new BigDecimal(0);
 
     private static void printWarning(String warningMsg) {
         if (!isNoWarnings) {
@@ -27,31 +29,55 @@ public class PiCalc {
         }
     }
 
+    /**
+     * Realization of <a href="https://en.wikipedia.org/wiki/Bailey–Borwein–Plouffe_formula">this</a>
+     * (Bailey–Borwein–Plouffe) Pi calculation formula.
+     *
+     * @param k     - is an index of one Pi's sum series to calculate
+     * @param scale - BigDecimals' scale for calculations
+     * @return one Pi's sum series
+     */
+    private static BigDecimal sumPi(int k, int scale) {
+        final BigDecimal BIG_ONE = BigDecimal.ONE.setScale(scale + 1, BigDecimal.ROUND_HALF_UP);
+        final BigDecimal BIG_TWO = new BigDecimal(2).setScale(scale + 1, BigDecimal.ROUND_HALF_UP);
+        final BigDecimal BIG_FOUR = new BigDecimal(4).setScale(scale + 1, BigDecimal.ROUND_HALF_UP);
+        final BigDecimal BIG_FIVE = new BigDecimal(5).setScale(scale + 1, BigDecimal.ROUND_HALF_UP);
+        final BigDecimal BIG_SIX = new BigDecimal(6).setScale(scale + 1, BigDecimal.ROUND_HALF_UP);
+        final BigDecimal BIG_EIGHT = new BigDecimal(8).setScale(scale + 1, BigDecimal.ROUND_HALF_UP);
+
+        final BigDecimal BIG_K = new BigDecimal(k).setScale(scale + 1, BigDecimal.ROUND_HALF_UP);
+        final BigDecimal BIG_EIGHT_MUL_K = BIG_EIGHT.multiply(BIG_K).setScale(scale + 1, BigDecimal.ROUND_HALF_UP);
+        final BigDecimal BIG_SIXTEEN_IN_K = new BigDecimal(16).pow(k).setScale(scale + 1, BigDecimal.ROUND_HALF_UP);
+
+        BigDecimal sumK = BIG_ONE.divide(BIG_SIXTEEN_IN_K, BigDecimal.ROUND_HALF_UP);
+
+        BigDecimal secondPart = BIG_FOUR.divide(BIG_EIGHT_MUL_K.add(BIG_ONE), BigDecimal.ROUND_HALF_UP);
+        secondPart = secondPart.subtract(BIG_TWO.divide(BIG_EIGHT_MUL_K.add(BIG_FOUR), BigDecimal.ROUND_HALF_UP));
+        secondPart = secondPart.subtract(BIG_ONE.divide(BIG_EIGHT_MUL_K.add(BIG_FIVE), BigDecimal.ROUND_HALF_UP));
+        secondPart = secondPart.subtract(BIG_ONE.divide(BIG_EIGHT_MUL_K.add(BIG_SIX), BigDecimal.ROUND_HALF_UP));
+
+        return sumK.multiply(secondPart);
+    }
+
     public static void main(String[] args) {
         PiCalc piCalc = new PiCalc();
-        MultiThreadPiCalc mtPiCalc = new MultiThreadPiCalc();
 
-        Runnable picalcer = new Runnable() {
-            public void run() {
+        try {
+            JCommander.newBuilder()
+                    .addObject(piCalc)
+                    .build()
+                    .parse(args);
+        } catch (ParameterException e) {
+            System.err.println(e.getMessage());
+            System.exit(1);
+        }
 
-                synchronized (this) {
-                    while (mtPiCalc.k < MultiThreadPiCalc.MAX_K) {
-//                    if (sumPi(k, SCALE).compareTo(accuracy) <= 0) {
-//                        k = Integer.MAX_VALUE;
-//                    }
-                        mtPiCalc.pi = mtPiCalc.pi.add(MultiThreadPiCalc.sumPi(mtPiCalc.k, SCALE));
-                        mtPiCalc.k++;
-                    }
-                }
-            }
-        };
+        ExecutorService executorService = Executors.newFixedThreadPool(THREADS);
+        Callable<BigDecimal> picalcer = () -> sumPi(k.getAndIncrement(), SCALE);
 
-        JCommander.newBuilder()
-                .addObject(piCalc)
-                .build()
-                .parse(args);
-
-        for (int i = 0; i < SCALE; i++) {
+        // accuracy calculation
+        BigDecimal accuracy = new BigDecimal(1).setScale(SCALE, BigDecimal.ROUND_HALF_UP);
+        for (int i = 0; i <= SCALE; i++) {
             accuracy = accuracy.divide(new BigDecimal(10), BigDecimal.ROUND_UP);
         }
 
@@ -59,21 +85,25 @@ public class PiCalc {
             if (Runtime.getRuntime().availableProcessors() < THREADS) {
                 printWarning("Your computer have only " + Runtime.getRuntime().availableProcessors() + " cores");
             }
-
-            for (int i = 0; i < THREADS; i++) {
-                piCalc.threadsList.add(new Thread(picalcer));
+            if (SCALE < 0) {
+                printWarning("Scale can not be negative");
+                SCALE = 0;
             }
 
-            piCalc.threadsList.forEach(Thread::start);
+            Future<BigDecimal> future;
+            do {
+                future = executorService.submit(picalcer);
+                synchronized (PiCalc.class) {
+                    pi = pi.add(future.get());
+                }
+            } while (future.get().compareTo(accuracy) > 0);
 
-            while (mtPiCalc.k < MultiThreadPiCalc.MAX_K - 1) {
-                Thread.sleep(0, 1);
-            }
-        } catch (NumberFormatException | InterruptedException e) {
+            executorService.shutdown();
+        } catch (NumberFormatException | InterruptedException | ExecutionException e) {
             System.err.println(e.getMessage());
             System.exit(1);
         }
 
-        System.out.printf("%." + SCALE + "f", mtPiCalc.pi);
+        System.out.printf("%." + SCALE + "f", pi);
     }
 }
