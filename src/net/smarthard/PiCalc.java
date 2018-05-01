@@ -77,13 +77,6 @@ public class PiCalc {
         ExecutorService executorService = Executors.newFixedThreadPool(THREADS);
         Callable<BigDecimal> picalcer = () -> sumPi(k.getAndIncrement(), SCALE);
 
-        // accuracy calculation
-        BigDecimal accuracy = BigDecimal.ONE.setScale(SCALE, BigDecimal.ROUND_HALF_UP);
-        for (int i = 0; i <= SCALE; i++) {
-            accuracy = accuracy.divide(BigDecimal.TEN, i < SCALE ? BigDecimal.ROUND_UNNECESSARY
-                                                                    : BigDecimal.ROUND_HALF_UP);
-        }
-
         try {
             int coresCount = Runtime.getRuntime().availableProcessors();
             if (coresCount < THREADS) {
@@ -92,6 +85,13 @@ public class PiCalc {
             if (SCALE < 0) {
                 printWarning("Scale can not be negative");
                 SCALE = 0;
+            }
+
+            // accuracy calculation
+            BigDecimal accuracy = BigDecimal.ONE.setScale(SCALE, BigDecimal.ROUND_HALF_UP);
+            for (int i = 0; i <= SCALE; i++) {
+                accuracy = accuracy.divide(BigDecimal.TEN, i < SCALE ? BigDecimal.ROUND_UNNECESSARY
+                        : BigDecimal.ROUND_HALF_UP);
             }
 
             Future<BigDecimal> future;
