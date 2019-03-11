@@ -1,6 +1,7 @@
 package net.smarthard;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -41,23 +42,23 @@ public class PiCalc {
      * @return one Pi's sum series
      */
     private static BigDecimal sumPi(int k, int scale) {
-        final BigDecimal BIG_ONE = BigDecimal.ONE.setScale(scale + 1, BigDecimal.ROUND_HALF_UP);
-        final BigDecimal BIG_TWO = new BigDecimal(2).setScale(scale + 1, BigDecimal.ROUND_HALF_UP);
-        final BigDecimal BIG_FOUR = new BigDecimal(4).setScale(scale + 1, BigDecimal.ROUND_HALF_UP);
-        final BigDecimal BIG_FIVE = new BigDecimal(5).setScale(scale + 1, BigDecimal.ROUND_HALF_UP);
-        final BigDecimal BIG_SIX = new BigDecimal(6).setScale(scale + 1, BigDecimal.ROUND_HALF_UP);
-        final BigDecimal BIG_EIGHT = new BigDecimal(8).setScale(scale + 1, BigDecimal.ROUND_HALF_UP);
+        final BigDecimal BIG_ONE = BigDecimal.ONE.setScale(scale + 1, RoundingMode.HALF_UP);
+        final BigDecimal BIG_TWO = new BigDecimal(2).setScale(scale + 1, RoundingMode.HALF_UP);
+        final BigDecimal BIG_FOUR = new BigDecimal(4).setScale(scale + 1, RoundingMode.HALF_UP);
+        final BigDecimal BIG_FIVE = new BigDecimal(5).setScale(scale + 1, RoundingMode.HALF_UP);
+        final BigDecimal BIG_SIX = new BigDecimal(6).setScale(scale + 1, RoundingMode.HALF_UP);
+        final BigDecimal BIG_EIGHT = new BigDecimal(8).setScale(scale + 1, RoundingMode.HALF_UP);
 
-        final BigDecimal BIG_K = new BigDecimal(k).setScale(scale + 1, BigDecimal.ROUND_HALF_UP);
-        final BigDecimal BIG_EIGHT_MUL_K = BIG_EIGHT.multiply(BIG_K).setScale(scale + 1, BigDecimal.ROUND_HALF_UP);
-        final BigDecimal BIG_SIXTEEN_IN_K = new BigDecimal(16).pow(k).setScale(scale + 1, BigDecimal.ROUND_HALF_UP);
+        final BigDecimal BIG_K = new BigDecimal(k).setScale(scale + 1, RoundingMode.HALF_UP);
+        final BigDecimal BIG_EIGHT_MUL_K = BIG_EIGHT.multiply(BIG_K).setScale(scale + 1, RoundingMode.HALF_UP);
+        final BigDecimal BIG_SIXTEEN_IN_K = new BigDecimal(16).pow(k).setScale(scale + 1, RoundingMode.HALF_UP);
 
-        BigDecimal sumK = BIG_ONE.divide(BIG_SIXTEEN_IN_K, BigDecimal.ROUND_HALF_UP);
+        BigDecimal sumK = BIG_ONE.divide(BIG_SIXTEEN_IN_K, RoundingMode.HALF_UP);
 
-        BigDecimal secondPart = BIG_FOUR.divide(BIG_EIGHT_MUL_K.add(BIG_ONE), BigDecimal.ROUND_HALF_UP);
-        secondPart = secondPart.subtract(BIG_TWO.divide(BIG_EIGHT_MUL_K.add(BIG_FOUR), BigDecimal.ROUND_HALF_UP));
-        secondPart = secondPart.subtract(BIG_ONE.divide(BIG_EIGHT_MUL_K.add(BIG_FIVE), BigDecimal.ROUND_HALF_UP));
-        secondPart = secondPart.subtract(BIG_ONE.divide(BIG_EIGHT_MUL_K.add(BIG_SIX), BigDecimal.ROUND_HALF_UP));
+        BigDecimal secondPart = BIG_FOUR.divide(BIG_EIGHT_MUL_K.add(BIG_ONE), RoundingMode.HALF_UP);
+        secondPart = secondPart.subtract(BIG_TWO.divide(BIG_EIGHT_MUL_K.add(BIG_FOUR), RoundingMode.HALF_UP));
+        secondPart = secondPart.subtract(BIG_ONE.divide(BIG_EIGHT_MUL_K.add(BIG_FIVE), RoundingMode.HALF_UP));
+        secondPart = secondPart.subtract(BIG_ONE.divide(BIG_EIGHT_MUL_K.add(BIG_SIX), RoundingMode.HALF_UP));
 
         return sumK.multiply(secondPart);
     }
@@ -88,10 +89,9 @@ public class PiCalc {
             }
 
             // accuracy calculation
-            BigDecimal accuracy = BigDecimal.ONE.setScale(SCALE, BigDecimal.ROUND_HALF_UP);
+            BigDecimal accuracy = BigDecimal.ONE.setScale(SCALE, RoundingMode.HALF_UP);
             for (int i = 0; i <= SCALE; i++) {
-                accuracy = accuracy.divide(BigDecimal.TEN, i < SCALE ? BigDecimal.ROUND_UNNECESSARY
-                        : BigDecimal.ROUND_HALF_UP);
+                accuracy = accuracy.divide(BigDecimal.TEN, i < SCALE ? RoundingMode.HALF_UP : RoundingMode.HALF_UP);
             }
 
             Future<BigDecimal> future;
