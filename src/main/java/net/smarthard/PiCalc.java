@@ -10,7 +10,7 @@ import com.beust.jcommander.*;
 public class PiCalc {
 
     @Parameter(names = {"-w", "--nowarnings"}, description = "Disables warning messages")
-    private static boolean isNoWarnings = false;
+    private static boolean suppressWarnings = false;
 
     @Parameter(names = {"-s", "--scale"}, description = "Count of numbers after dot")
     private static Integer SCALE = 2;
@@ -22,9 +22,9 @@ public class PiCalc {
 
     private static volatile BigDecimal pi = new BigDecimal(0);
 
-    private static void printWarning(String warningMsg) {
-        if (!isNoWarnings) {
-            System.out.println("WARNING: " + warningMsg);
+    private static void printWarning(String msg) {
+        if (!suppressWarnings) {
+            System.out.println("WARNING: " + msg);
         }
     }
 
@@ -79,9 +79,9 @@ public class PiCalc {
         Callable<BigDecimal> picalcer = () -> sumPi(k.getAndIncrement(), SCALE);
 
         try {
-            int coresCount = Runtime.getRuntime().availableProcessors();
-            if (coresCount < THREADS) {
-                printWarning("Your computer have only " + coresCount + " cores");
+            final int CORES_COUNT = Runtime.getRuntime().availableProcessors();
+            if (CORES_COUNT < THREADS) {
+                printWarning("Your computer has only " + CORES_COUNT + " cores");
             }
             if (SCALE < 0) {
                 printWarning("Scale can not be negative");
