@@ -43,8 +43,8 @@
 					</execution>
 				</executions>
 				<configuration>
-					<outputDirectory>${project.basedir}/builds/${version}</outputDirectory>
-					<finalName>${artifactId}-${version}</finalName>
+					<outputDirectory>${project.basedir}/builds/${project.version}</outputDirectory>
+					<finalName>${project.artifactId}-${project.version}</finalName>
 				</configuration>
 			</plugin>
 		</plugins>
